@@ -1,0 +1,1382 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamApp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #7b2cbf;
+            --text-color: #ffffff;
+            --bg-color: #000000;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            /* Enforce 16:9 aspect ratio */
+            aspect-ratio: 16/9;
+            background-color: #111;
+            overflow: hidden;
+            box-shadow: 0 0 5em rgba(0, 0, 0, 0.8);
+
+            /* Constraint: Fit within viewport */
+            max-height: 100vh;
+            max-width: 177.78vh;
+            /* 16/9 * 100vh */
+            margin: auto;
+
+            /* KEY: Define this as a container for query units */
+            container-type: inline-size;
+            /* Set base font size relative to container width. 
+               At 1920px (1080p), 1cqw = 19.2px. 
+               We use 1cqw as base for easy math. */
+            font-size: 1cqw;
+        }
+
+        /* Background Layer */
+        .background-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('assets/hero.png');
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            transition: background-image 0.5s ease;
+        }
+
+        .background-layer.dynamic {
+            background-image: none;
+        }
+
+        /* Gradient Overlay */
+        .background-layer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                    rgba(0, 0, 0, 0.3) 0%,
+                    rgba(0, 0, 0, 0.1) 40%,
+                    rgba(0, 0, 0, 0.8) 80%,
+                    #000 100%),
+                linear-gradient(to right,
+                    rgba(0, 0, 0, 0.8) 0%,
+                    rgba(0, 0, 0, 0.4) 40%,
+                    transparent 100%);
+            z-index: 2;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 3;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4em 5em;
+            /* Scalable padding */
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2em;
+            /* ~23px at 1080p */
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3em;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #fff;
+        }
+
+        .nav-links a:focus,
+        .nav-links a.focused {
+            color: #fff;
+            outline: none;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1.5em;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 0.3em;
+        }
+
+        .icon-btn svg {
+            width: 1.5em;
+            height: 1.5em;
+        }
+
+        .profile-icon img {
+            width: 2em;
+            height: 2em;
+            border-radius: 50%;
+            border: 0.15em solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Hero Section */
+        .hero-content {
+            margin-top: auto;
+            margin-bottom: 2em;
+            max-width: 55%;
+            transform: translateY(-30%);
+        }
+
+        .hero-title {
+            font-size: 5em;
+            /* ~96px at 1080p */
+            line-height: 0.9;
+            font-weight: 800;
+            margin-bottom: 0.3em;
+            text-transform: uppercase;
+            text-shadow: 0 0.1em 0.5em rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            font-size: 1.1em;
+            margin-bottom: 1.5em;
+            font-weight: 500;
+        }
+
+        .match {
+            color: #46d369;
+            font-weight: 700;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1em;
+        }
+
+        .btn-play {
+            background-color: #6200ea;
+            color: #fff;
+            border: none;
+            padding: 0.6em 2.5em;
+            border-radius: 2em;
+            font-weight: 700;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 0.2em 0.8em rgba(98, 0, 234, 0.4);
+        }
+
+        .btn-play:hover {
+            transform: scale(1.05);
+            background-color: #7c4dff;
+        }
+
+        .btn-play:focus,
+        .btn-play.focused {
+            transform: scale(1.05);
+            background-color: #7c4dff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-add {
+            background: rgba(255, 255, 255, 0.1);
+            border: 0.1em solid rgba(255, 255, 255, 0.5);
+            color: #fff;
+            width: 3em;
+            height: 3em;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .btn-add svg {
+            width: 1.5em;
+            height: 1.5em;
+        }
+
+
+        .list-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .movie-list {
+            display: flex;
+            gap: 1em;
+            overflow-x: auto;
+            padding-bottom: 0.5em;
+            scrollbar-width: none;
+        }
+
+        .movie-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .load-more-trigger {
+            flex: 0 0 auto;
+            width: 20%;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(98, 0, 234, 0.2);
+            border: 0.2em dashed rgba(98, 0, 234, 0.5);
+            border-radius: 0.5em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .load-more-trigger:hover {
+            background: rgba(98, 0, 234, 0.3);
+            border-color: rgba(98, 0, 234, 0.8);
+            transform: scale(1.05);
+        }
+
+        .load-more-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .load-more-content svg {
+            width: 2em;
+            height: 2em;
+            margin-bottom: 0.5em;
+        }
+
+        .load-more-content p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .movie-card {
+            flex: 0 0 auto;
+            width: 20%;
+            aspect-ratio: 16/9;
+            border-radius: 0.5em;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 1em;
+        }
+
+        .movie-card:hover,
+        .movie-card:focus,
+        .movie-card.focused {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.7);
+            outline: none;
+        }
+
+        .channel-name {
+            display: none;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 0.5em;
+            right: 0.5em;
+            width: 0.8em;
+            height: 0.8em;
+            border-radius: 50%;
+            border: 0.15em solid rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        .status-online {
+            background: #46d369;
+            box-shadow: 0 0 0.5em #46d369;
+        }
+
+        .status-offline {
+            background: #ff4444;
+            box-shadow: 0 0 0.5em #ff4444;
+        }
+
+        .status-checking {
+            background: #ffa500;
+            box-shadow: 0 0 0.5em #ffa500;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .movie-card.offline {
+            display: none !important;
+        }
+
+        .movie-card.offline.show-offline {
+            display: flex !important;
+            opacity: 0.5;
+            filter: grayscale(0.7);
+        }
+
+        .btn-add:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+
+        .btn-add:focus,
+        .btn-add.focused {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+
+        .icon-btn:focus,
+        .icon-btn.focused {
+            color: var(--primary-color);
+            outline: none;
+            transform: scale(1.2);
+        }
+
+        .profile-icon:focus,
+        .profile-icon.focused {
+            outline: none;
+        }
+
+        .profile-icon:focus img,
+        .profile-icon.focused img {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .loading-spinner {
+            width: 4em;
+            height: 4em;
+            border: 0.4em solid rgba(255, 255, 255, 0.1);
+            border-top-color: #6200ea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5em;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 0.5em;
+        }
+
+        .loading-subtitle {
+            font-size: 1em;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="background-layer"></div>
+        <div class="content-layer">
+            <nav class="navbar">
+                <div class="nav-links">
+                    <a href="#" class="active" tabindex="0" id="filter-all">TODOS</a>
+                    <a href="#" tabindex="0" id="filter-online">EN LÍNEA</a>
+                    <a href="#" tabindex="0" id="filter-offline">OFFLINE</a>
+                    <a href="#" tabindex="0" id="filter-spanish">ESPAÑOL</a>
+                    <a href="#" tabindex="0" id="filter-nacional">NACIONAL</a>
+                    <a href="#" tabindex="0" id="filter-deportes">DEPORTES</a>
+                </div>
+                <div class="nav-icons">
+                    <button class="icon-btn search-btn" tabindex="0">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                    <div class="profile-icon" tabindex="0">
+                        <img src="https://ui-avatars.com/api/?name=User&amp;background=random&amp;color=fff"
+                            alt="Profile">
+                    </div>
+                </div>
+            </nav>
+
+            <div class="hero-content" id="hero-content">
+                <h1 class="hero-title" id="hero-title">CARGANDO...</h1>
+                <div class="hero-meta">
+                    <span class="studio" id="hero-category">Canales IPTV</span>
+                    <span class="match">EN VIVO 🔴</span>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-play focused" tabindex="0" id="hero-play-btn">PLAY</button>
+                    <button class="btn-add" tabindex="0">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="movie-list-section">
+                <h3 class="list-title" id="channels-title">
+                    CANALES EN VIVO
+                    <span style="color: #46d369;">●</span> <span id="online-count">0</span>
+                    <span style="opacity: 0.5;">|</span>
+                    Mostrando <span id="total-count">0</span>
+                    <span style="opacity: 0.5; margin-left: 1em; font-size: 0.7em;" id="cache-indicator"></span>
+                </h3>
+                <div class="movie-list" id="channels-list">
+                    <!-- Canales cargados dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-title">Abriendo en ExoPlayer...</div>
+            <div class="loading-subtitle" id="loading-channel-name"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
+    <script>
+        // Variables globales
+        let allChannels = [];
+        let currentHeroIndex = 0;
+        let heroInterval;
+        let currentFilter = 'all';
+        let renderedChannels = [];
+        let loadedFromCache = false;
+
+        const MAX_CHANNELS_RENDER = 8000;
+        const SPANISH_KEYWORDS = ['español', 'spain', 'méxico', 'argentina', 'colombia', 'perú', 'chile', 'latino', 'telemundo', 'univision', 'caracol', 'rtve'];
+
+        // Configuración de caché
+        const CACHE_VERSION = 'v6_nacional'; // Con canales NACIONAL de Guatemala
+        const CACHE_KEYS = {
+            CHANNELS: `iptv_channels_${CACHE_VERSION}`,
+            TIMESTAMP: `iptv_timestamp_${CACHE_VERSION}`
+        };
+        const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+
+        // Verificar si el caché es válido
+        function isCacheValid() {
+            const timestamp = localStorage.getItem(CACHE_KEYS.TIMESTAMP);
+            if (!timestamp) return false;
+
+            const age = Date.now() - parseInt(timestamp);
+            return age < CACHE_EXPIRY;
+        }
+
+        // IndexedDB Helpers
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('IPTV_DB', 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('channels_store')) {
+                        db.createObjectStore('channels_store');
+                    }
+                };
+            });
+        }
+
+        async function saveToIndexedDB(key, data) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['channels_store'], 'readwrite');
+                const store = transaction.objectStore('channels_store');
+                const request = store.put(data, key);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getFromIndexedDB(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['channels_store'], 'readonly');
+                const store = transaction.objectStore('channels_store');
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Guardar canales en caché (IndexedDB + Timestamp en LocalStorage)
+        async function saveChannelsToCache(channels) {
+            try {
+                await saveToIndexedDB(CACHE_KEYS.CHANNELS, channels);
+                localStorage.setItem(CACHE_KEYS.TIMESTAMP, Date.now().toString());
+                console.log('💾 Canales guardados en caché (IndexedDB)');
+            } catch (e) {
+                console.warn('⚠️ No se pudo guardar en caché:', e);
+            }
+        }
+
+        // Cargar canales desde caché (IndexedDB)
+        async function loadChannelsFromCache() {
+            try {
+                const channels = await getFromIndexedDB(CACHE_KEYS.CHANNELS);
+                if (!channels) return null;
+
+                console.log(`✅ Cargados ${channels.length} canales desde caché (IndexedDB)`);
+                return channels;
+            } catch (e) {
+                console.warn('⚠️ Error leyendo caché:', e);
+                return null;
+            }
+        }
+
+        // Cargar canales desde M3U
+        async function loadChannels() {
+            try {
+                // Intentar cargar desde caché primero
+                if (isCacheValid()) {
+                    const cachedChannels = await loadChannelsFromCache();
+                    if (cachedChannels && cachedChannels.length > 0) {
+                        allChannels = cachedChannels;
+                        loadedFromCache = true;
+                        console.log('⚡ Carga rápida desde caché activada');
+                        processChannels();
+                        return;
+                    }
+                }
+
+                // Si no hay caché válido, cargar desde la red
+                console.log('🌐 Descargando canales desde múltiples fuentes...');
+
+                let channels1 = [];
+                let channels2 = [];
+                let channels3 = [];
+
+                // Cargar lista principal (IPTV-ORG)
+                try {
+                    const response1 = await fetch('https://iptv-org.github.io/iptv/index.m3u');
+                    const m3uText1 = await response1.text();
+                    channels1 = parseM3U(m3uText1);
+                    console.log(`✅ Cargados ${channels1.length} canales de IPTV-ORG`);
+                } catch (error) {
+                    console.error('❌ Error cargando IPTV-ORG:', error);
+                }
+
+                // Cargar lista NACIONAL (canales de Guatemala hardcoded)
+                const nacionalM3U = `#EXTM3U
+#EXTINF:-1 tvg-logo="https://i.imgur.com/76bB3HE.png",Canal 3 Guatemala
+https://alba-gt-chapintv-c3.stream.mediatiquestream.com/original.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/BoZHNMw.png",Canal 7 Guatemala
+https://alba-gt-chapintv-c7.stream.mediatiquestream.com/original.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/wUIekLr.png",TN23 Guatemala
+https://alba-gt-chapintv-tn23.stream.mediatiquestream.com/480p.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/7O71o5L.png",Azteca Guatemala
+https://channel1-tva.duin.dev/tv/streaming/0/stream.m3u8`;
+
+                channels2 = parseM3U(nacionalM3U);
+                channels2.forEach(ch => ch.source = 'nacional');
+                console.log(`🇬🇹 Cargados ${channels2.length} canales NACIONAL (Guatemala)`);
+
+                // Cargar lista DEPORTES (hardcoded para mayor velocidad)
+                const deportesM3U = `#EXTM3U
+#EXTINF:-1,TUDN FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=16&f=.ts
+#EXTINF:-1,GOL PERU FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=7&f=.ts
+#EXTINF:-1,TNT SPORTS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=11&f=.ts
+#EXTINF:-1,ESPN PREMIUM FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=12&f=.ts
+#EXTINF:-1,TYC SPORTS ARGENTINA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=206&f=.ts
+#EXTINF:-1,TYC SPORTS INTERNACIONAL FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=207&f=.ts
+#EXTINF:-1,FOX SPORTS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=19&f=.ts
+#EXTINF:-1,FOX SPORTS 2 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=20&f=.ts
+#EXTINF:-1,FOX SPORTS 3 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=22&f=.ts
+#EXTINF:-1,ESPN FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=26&f=.ts
+#EXTINF:-1,ESPN 2 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=28&f=.ts
+#EXTINF:-1,ESPN 3 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=29&f=.ts
+#EXTINF:-1,DIRECTV SPORTS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=32&f=.ts
+#EXTINF:-1,DIRECTV SPORTS 2 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=33&f=.ts
+#EXTINF:-1,DIRECTV SPORTS PLUS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=34&f=.ts
+#EXTINF:-1,FOX SPORTS MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=35&f=.ts
+#EXTINF:-1,FOX SPORTS 2 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=36&f=.ts
+#EXTINF:-1,FOX SPORTS 3 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=37&f=.ts
+#EXTINF:-1,ESPN MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=41&f=.ts
+#EXTINF:-1,ESPN 2 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=46&f=.ts
+#EXTINF:-1,ESPN 3 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=48&f=.ts
+#EXTINF:-1,LIGA 1 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=49&f=.ts
+#EXTINF:-1,LIGA 1 MAX FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=50&f=.ts
+#EXTINF:-1,FOX SPORTS PREMIUM FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=65&f=.ts
+#EXTINF:-1,ESPN 5 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=66&f=.ts
+#EXTINF:-1,ESPN 6 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=67&f=.ts
+#EXTINF:-1,ESPN 7 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=68&f=.ts
+#EXTINF:-1,DAZN F1 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=69&f=.ts
+#EXTINF:-1,MOVISTAR LIGA DE CAMPEONES FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=70&f=.ts
+#EXTINF:-1,BEIN SPORTS XTRA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=71&f=.ts
+#EXTINF:-1,MOVISTAR LA LIGA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=72&f=.ts
+#EXTINF:-1,WIN SPORTS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=73&f=.ts
+#EXTINF:-1,ESPN 4 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=74&f=.ts
+#EXTINF:-1,ESPN 5 MEXICO FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=75&f=.ts
+#EXTINF:-1,AZTECA DEPORTES FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=76&f=.ts
+#EXTINF:-1,TNT SPORTS CHILE FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=77&f=.ts
+#EXTINF:-1,SKY SPORTS LA LIGA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=78&f=.ts
+#EXTINF:-1,SKY SPORTS BUNDESLIGA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=79&f=.ts
+#EXTINF:-1,DAZN LA LIGA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=82&f=.ts
+#EXTINF:-1,WIN SPORTS PLUS FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=83&f=.ts
+#EXTINF:-1,ESPN 4 FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=84&f=.ts
+#EXTINF:-1,ESPN ARGENTINA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=85&f=.ts
+#EXTINF:-1,ESPN PREMIUM ARGENTINA FHD
+https://deportes.ksdjugfsddeports.com/Y6gMx4s18]WB.php?stream=86&f=.ts`;
+
+                channels3 = parseM3U(deportesM3U);
+                channels3.forEach(ch => ch.source = 'deportes');
+                console.log(`⚽ Cargados ${channels3.length} canales DEPORTES (hardcoded)`);
+
+                // Combinar todas las listas (al menos una debería funcionar)
+                allChannels = [...channels1, ...channels2, ...channels3];
+
+                if (allChannels.length === 0) {
+                    throw new Error('No se pudieron cargar canales de ninguna fuente');
+                }
+
+                // Agregar logos a canales de deportes desde otras listas
+                const channelsWithLogos = [...channels1, ...channels2];
+                channels3.forEach(deporteChannel => {
+                    if (!deporteChannel.logo) {
+                        const channelName = deporteChannel.name.toLowerCase();
+
+                        // Buscar canal similar en las otras listas
+                        const similarChannel = channelsWithLogos.find(c => {
+                            if (!c.logo) return false;
+                            const cName = c.name.toLowerCase();
+
+                            // Buscar coincidencias por palabras clave
+                            const keywords = channelName.split(' ').filter(w => w.length > 3);
+                            return keywords.some(keyword => cName.includes(keyword));
+                        });
+
+                        if (similarChannel) {
+                            deporteChannel.logo = similarChannel.logo;
+                            console.log(`🔍 Logo encontrado para ${deporteChannel.name}: ${similarChannel.name}`);
+                        } else {
+                            // Logos genéricos por cadena
+                            if (channelName.includes('espn')) {
+                                deporteChannel.logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/512px-ESPN_wordmark.svg.png';
+                            } else if (channelName.includes('fox sports')) {
+                                deporteChannel.logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Fox_Sports_logo.svg/512px-Fox_Sports_logo.svg.png';
+                            } else if (channelName.includes('directv')) {
+                                deporteChannel.logo = 'https://i.imgur.com/PRijvR0.png';
+                            } else if (channelName.includes('tyc')) {
+                                deporteChannel.logo = 'https://i.imgur.com/2p1T0Xv.png';
+                            } else if (channelName.includes('tudn')) {
+                                deporteChannel.logo = 'https://i.imgur.com/oT5CAvd.png';
+                            } else if (channelName.includes('gol')) {
+                                deporteChannel.logo = 'https://i.imgur.com/uzU2nXo.png';
+                            } else if (channelName.includes('tnt')) {
+                                deporteChannel.logo = 'https://i.imgur.com/Bv1E8Sw.png';
+                            } else if (channelName.includes('win sports')) {
+                                deporteChannel.logo = 'https://i.imgur.com/xv9J5Ye.png';
+                            } else if (channelName.includes('liga 1')) {
+                                deporteChannel.logo = 'https://i.imgur.com/fsUiqYg.png';
+                            } else if (channelName.includes('dazn')) {
+                                deporteChannel.logo = 'https://i.imgur.com/fVYPHdK.png';
+                            } else if (channelName.includes('movistar')) {
+                                deporteChannel.logo = 'https://i.imgur.com/BuMQ8CY.png';
+                            } else if (channelName.includes('bein')) {
+                                deporteChannel.logo = 'https://i.imgur.com/vbHuLIJ.png';
+                            } else if (channelName.includes('azteca')) {
+                                deporteChannel.logo = 'https://i.imgur.com/UNJ3VlB.png';
+                            } else if (channelName.includes('sky sports')) {
+                                deporteChannel.logo = 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/Sky_Sports_logo_2020.svg/512px-Sky_Sports_logo_2020.svg.png';
+                            }
+                        }
+                    }
+                });
+
+                console.log(`📺 Total: ${allChannels.length} canales cargados`);
+
+                // Guardar en caché
+                saveChannelsToCache(allChannels);
+                loadedFromCache = false;
+
+                processChannels();
+
+            } catch (error) {
+                console.error('Error cargando canales:', error);
+                document.getElementById('hero-title').textContent = 'ERROR';
+            }
+        }
+
+        async function clearIndexedDB() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['channels_store'], 'readwrite');
+                const store = transaction.objectStore('channels_store');
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Limpiar caché
+        async function clearCache() {
+            try {
+                await clearIndexedDB();
+                localStorage.removeItem(CACHE_KEYS.CHANNELS);
+                localStorage.removeItem(CACHE_KEYS.TIMESTAMP);
+                console.log('🗑️ Caché limpiado');
+                // alert('Caché limpiado. Recarga la página para descargar datos frescos.'); // Alert removed to avoid blocking reload flow
+            } catch (e) {
+                console.error('Error limpiando caché:', e);
+            }
+        }
+
+        // Mostrar indicador de caché
+        function updateCacheIndicator(fromCache) {
+            const indicator = document.getElementById('cache-indicator');
+            if (fromCache) {
+                const timestamp = localStorage.getItem(CACHE_KEYS.TIMESTAMP);
+                const date = new Date(parseInt(timestamp));
+                indicator.textContent = `📦 Caché: ${date.toLocaleString()}`;
+                indicator.style.cursor = 'pointer';
+                indicator.title = 'Click para limpiar caché';
+                indicator.onclick = async () => {
+                    if (confirm('¿Limpiar caché y recargar datos frescos?')) {
+                        await clearCache();
+                        location.reload();
+                    }
+                };
+            } else {
+                indicator.textContent = '🌐 Datos frescos';
+            }
+        }
+
+        // Procesar canales (común para caché y red)
+        function processChannels() {
+            // Actualizar indicador
+            updateCacheIndicator(loadedFromCache);
+
+            // Trabajar con todos los canales disponibles (se asignará placeholder si falta logo)
+            const channelsWithLogo = allChannels.filter(ch => ch && ch.url);
+
+            // Separar por fuente
+            const deportesChannels = channelsWithLogo.filter(ch => ch.source === 'deportes');
+            const nacionalChannels = channelsWithLogo.filter(ch => ch.source === 'nacional');
+            const regularChannels = channelsWithLogo.filter(ch => !ch.source || ch.source === undefined);
+
+            // Priorizar canales en español dentro de regulares
+            const spanishKeywords = ['español', 'spain', 'méxico', 'argentina', 'colombia', 'perú', 'chile', 'latino', 'telemundo', 'univision', 'caracol', 'rtve'];
+            const spanishChannels = regularChannels.filter(channel =>
+                spanishKeywords.some(keyword =>
+                    channel.name.toLowerCase().includes(keyword) ||
+                    (channel.groupTitle && channel.groupTitle.toLowerCase().includes(keyword))
+                )
+            );
+            const otherChannels = regularChannels.filter(ch => !spanishChannels.includes(ch));
+
+            // Orden final: NACIONAL → DEPORTES → ESPAÑOL → RESTO
+            renderedChannels = [...nacionalChannels, ...deportesChannels, ...spanishChannels, ...otherChannels];
+            renderedChannels = renderedChannels.slice(0, MAX_CHANNELS_RENDER);
+
+            console.log(`🇬🇹 Canales NACIONAL: ${nacionalChannels.length}`);
+            console.log(`⚽ Canales DEPORTES: ${deportesChannels.length}`);
+            console.log(`🇪🇸 Canales ESPAÑOL: ${spanishChannels.length}`);
+            console.log(`🌍 Otros canales: ${otherChannels.length}`);
+            console.log(`📺 Total: ${renderedChannels.length} canales`);
+
+            // Inicializar hero con canales nacionales, deportes o español (en ese orden de prioridad)
+            const heroChannels = nacionalChannels.length > 0 ? nacionalChannels.slice(0, 10) :
+                deportesChannels.length > 0 ? deportesChannels.slice(0, 10) :
+                    spanishChannels.slice(0, 10);
+            initializeHero(heroChannels);
+
+            // Renderizar todos los canales
+            renderAllChannels();
+
+            // Configurar filtros
+            setupFilters();
+        }
+
+        // Parser M3U
+        function parseM3U(m3uText) {
+            const lines = m3uText.split('\n');
+            const channels = [];
+            let currentChannel = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (line.startsWith('#EXTINF:')) {
+                    currentChannel = {
+                        name: '',
+                        logo: '',
+                        groupTitle: '',
+                        url: ''
+                    };
+
+                    // Extraer logo
+                    const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+                    if (logoMatch && logoMatch[1]) currentChannel.logo = logoMatch[1];
+
+                    // Extraer grupo
+                    const groupMatch = line.match(/group-title="([^"]*)"/);
+                    if (groupMatch) currentChannel.groupTitle = groupMatch[1];
+
+                    // Extraer nombre (después de la última coma)
+                    const nameMatch = line.split(',');
+                    if (nameMatch.length > 1) {
+                        currentChannel.name = nameMatch[nameMatch.length - 1].trim();
+                    }
+
+                } else if (line && !line.startsWith('#') && currentChannel) {
+                    currentChannel.url = line;
+                    if (currentChannel.name && currentChannel.url) {
+                        // Asignar logo genérico si no tiene
+                        if (!currentChannel.logo) {
+                            currentChannel.logo = getGenericLogo(currentChannel.name, currentChannel.groupTitle);
+                        }
+                        channels.push(currentChannel);
+                    }
+                    currentChannel = null;
+                }
+            }
+
+            return channels;
+        }
+
+        // Obtener logo genérico basado en nombre y categoría
+        function getGenericLogo(channelName, category) {
+            const name = channelName.toLowerCase();
+            const cat = (category || '').toLowerCase();
+
+            // Logos específicos por canal conocido
+            const logoMap = {
+                // Deportes
+                'espn': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/512px-ESPN_wordmark.svg.png',
+                'fox sports': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Fox_Sports_logo.svg/512px-Fox_Sports_logo.svg.png',
+                'directv': 'https://i.imgur.com/PRijvR0.png',
+                'tyc': 'https://i.imgur.com/2p1T0Xv.png',
+                'tudn': 'https://i.imgur.com/oT5CAvd.png',
+                'bein': 'https://i.imgur.com/vbHuLIJ.png',
+                'dazn': 'https://i.imgur.com/fVYPHdK.png',
+
+                // Noticias
+                'cnn': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/512px-CNN.svg.png',
+                'bbc': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/BBC_Logo_2021.svg/512px-BBC_Logo_2021.svg.png',
+                'telemundo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Telemundo_logo_2018.svg/512px-Telemundo_logo_2018.svg.png',
+                'univision': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Logo_Univision_2019.svg/512px-Logo_Univision_2019.svg.png',
+                'caracol': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Caracol_Televisi%C3%B3n_logo.svg/512px-Caracol_Televisi%C3%B3n_logo.svg.png',
+
+                // Entretenimiento
+                'hbo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/HBO_logo.svg/512px-HBO_logo.svg.png',
+                'netflix': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png',
+                'disney': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Disney_Channel_logo_%282019%29.svg/512px-Disney_Channel_logo_%282019%29.svg.png',
+                'discovery': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Discovery_Channel_-_Logo_2019.svg/512px-Discovery_Channel_-_Logo_2019.svg.png',
+                'natgeo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Natgeologo.svg/512px-Natgeologo.svg.png',
+                'history': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/History_%282021%29.svg/512px-History_%282021%29.svg.png',
+            };
+
+            // Buscar coincidencia en el mapa
+            for (const [key, logo] of Object.entries(logoMap)) {
+                if (name.includes(key)) {
+                    return logo;
+                }
+            }
+
+            // Logos por categoría
+            if (cat.includes('sport') || cat.includes('deporte')) {
+                return 'https://cdn-icons-png.flaticon.com/512/857/857418.png'; // Icono deportes
+            }
+            if (cat.includes('news') || cat.includes('noticias')) {
+                return 'https://cdn-icons-png.flaticon.com/512/3208/3208799.png'; // Icono noticias
+            }
+            if (cat.includes('movie') || cat.includes('cine') || cat.includes('film')) {
+                return 'https://cdn-icons-png.flaticon.com/512/3074/3074767.png'; // Icono películas
+            }
+            if (cat.includes('music') || cat.includes('música')) {
+                return 'https://cdn-icons-png.flaticon.com/512/727/727245.png'; // Icono música
+            }
+            if (cat.includes('kids') || cat.includes('niños') || cat.includes('infantil')) {
+                return 'https://cdn-icons-png.flaticon.com/512/2917/2917995.png'; // Icono niños
+            }
+
+            // Logo genérico de TV
+            return 'https://cdn-icons-png.flaticon.com/512/3721/3721964.png';
+        }
+
+        // Inicializar hero dinámico
+        function initializeHero(heroChannels) {
+            if (heroChannels.length === 0) return;
+
+            function updateHero() {
+                const channel = heroChannels[currentHeroIndex];
+                const bgLayer = document.querySelector('.background-layer');
+                const heroTitle = document.getElementById('hero-title');
+                const heroCategory = document.getElementById('hero-category');
+                const playBtn = document.getElementById('hero-play-btn');
+
+                // Actualizar fondo
+                if (channel.logo) {
+                    bgLayer.style.backgroundImage = `url('${channel.logo}')`;
+                }
+
+                // Actualizar título
+                const cleanName = channel.name.replace(/\[.*?\]/g, '').trim();
+                heroTitle.textContent = cleanName.toUpperCase();
+
+                // Actualizar categoría
+                heroCategory.textContent = channel.groupTitle || 'TV en Vivo';
+
+                // Actualizar botón play
+                playBtn.onclick = () => playChannel(channel.url, channel.name);
+
+                currentHeroIndex = (currentHeroIndex + 1) % heroChannels.length;
+            }
+
+            updateHero();
+            heroInterval = setInterval(updateHero, 5000);
+        }
+
+        // Renderizar todos los canales
+        function renderAllChannels() {
+            const channelsList = document.getElementById('channels-list');
+            channelsList.innerHTML = '';
+
+            renderedChannels.forEach((channel, index) => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.tabIndex = 0;
+                card.dataset.channelUrl = channel.url;
+                card.dataset.channelIndex = index;
+                card.dataset.source = channel.source || 'global';
+
+                const cleanName = channel.name.replace(/\[.*?\]/g, '').trim();
+                const placeholderUrl = `https://via.placeholder.com/200x300/333333/ffffff?text=${encodeURIComponent(cleanName)}`;
+                const logoUrl = channel.logo || placeholderUrl;
+
+                card.innerHTML = `
+                    <img src="${logoUrl}" 
+                         alt="${cleanName}"
+                         data-fallback="${placeholderUrl}"
+                         onerror="this.onerror=null; this.src=this.dataset.fallback;">
+                `;
+
+                card.onclick = () => playChannel(channel.url, channel.name);
+                channelsList.appendChild(card);
+            });
+
+            applyCurrentFilter();
+        }
+
+        // Actualizar contadores de canales
+        function updateCounters(visibleCount = renderedChannels.length) {
+            const totalAvailable = renderedChannels.length;
+            document.getElementById('online-count').textContent = totalAvailable;
+            document.getElementById('total-count').textContent = visibleCount;
+        }
+
+        // Configurar filtros de navegación
+        function setupFilters() {
+            const filterAll = document.getElementById('filter-all');
+            const filterOnline = document.getElementById('filter-online');
+            const filterOffline = document.getElementById('filter-offline');
+            const filterSpanish = document.getElementById('filter-spanish');
+            const filterNacional = document.getElementById('filter-nacional');
+            const filterDeportes = document.getElementById('filter-deportes');
+
+            filterAll.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterAll);
+                currentFilter = 'all';
+                applyCurrentFilter();
+            });
+
+            filterOnline.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterOnline);
+                currentFilter = 'online';
+                applyCurrentFilter();
+            });
+
+            filterOffline.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterOffline);
+                currentFilter = 'offline';
+                applyCurrentFilter();
+            });
+
+            filterSpanish.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterSpanish);
+                currentFilter = 'spanish';
+                applyCurrentFilter();
+            });
+
+            filterNacional.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterNacional);
+                currentFilter = 'nacional';
+                applyCurrentFilter();
+            });
+
+            filterDeportes.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveFilter(filterDeportes);
+                currentFilter = 'deportes';
+                applyCurrentFilter();
+            });
+        }
+
+        function setActiveFilter(activeElement) {
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            activeElement.classList.add('active');
+        }
+
+        function applyCurrentFilter() {
+            const cards = document.querySelectorAll('.movie-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const channelIndex = parseInt(card.dataset.channelIndex, 10);
+                const channel = renderedChannels[channelIndex];
+                let shouldShow = true;
+
+                switch (currentFilter) {
+                    case 'spanish':
+                        shouldShow = isSpanishChannel(channel);
+                        break;
+                    case 'nacional':
+                        shouldShow = channel && channel.source === 'nacional';
+                        break;
+                    case 'deportes':
+                        shouldShow = channel && channel.source === 'deportes';
+                        break;
+                    case 'offline':
+                        shouldShow = false;
+                        break;
+                    case 'online':
+                    case 'all':
+                    default:
+                        shouldShow = true;
+                        break;
+                }
+
+                card.style.display = shouldShow ? 'flex' : 'none';
+                if (shouldShow) visibleCount++;
+            });
+
+            updateCounters(visibleCount);
+        }
+
+        function isSpanishChannel(channel) {
+            if (!channel) return false;
+            const name = (channel.name || '').toLowerCase();
+            const group = (channel.groupTitle || '').toLowerCase();
+            return SPANISH_KEYWORDS.some(keyword => name.includes(keyword) || group.includes(keyword));
+        }
+
+        // Variables del player (simplificadas para ExoPlayer)
+        let loadingTimeout;
+
+        // Reproducir canal (abre en ExoPlayer automáticamente)
+        function playChannel(url, name) {
+            const overlay = document.getElementById('loading-overlay');
+            const channelNameEl = document.getElementById('loading-channel-name');
+
+            const cleanName = name.replace(/\[.*?\]/g, '').trim();
+
+            // Mostrar overlay de carga
+            overlay.classList.add('active');
+            channelNameEl.textContent = cleanName;
+
+            console.log(`📺 Abriendo canal: ${cleanName}`);
+            console.log(`🔗 URL: ${url}`);
+
+            // La app con ExoPlayer detectará automáticamente el intento de reproducción de M3U8
+            // y abrirá la URL en ExoPlayer
+
+            // Ocultar overlay después de 2 segundos (tiempo para que se abra ExoPlayer)
+            clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 2000);
+        }
+
+        // Inicializar
+        loadChannels();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Select all interactive elements in the desired order of "zones"
+            // We will use a spatial navigation approach which is more robust for TV interfaces
+            const focusableSelectors = [
+                '.nav-links a',
+                '.nav-icons .icon-btn',
+                '.profile-icon',
+                '.hero-actions button',
+                '.movie-card'
+            ];
+
+            const getFocusables = () => {
+                const elements = Array.from(document.querySelectorAll(focusableSelectors.join(', ')));
+                // Filter out invisible elements if any
+                return elements.filter(el => el.offsetParent !== null);
+            };
+
+            // Initialize focus on the first element (Dashboard)
+            setTimeout(() => {
+                const focusables = getFocusables();
+                if (focusables.length > 0) {
+                    focusables[0].focus();
+                    focusables[0].classList.add('focused');
+                }
+            }, 500);
+
+            // Handle Key Navigation
+            document.addEventListener('keydown', (e) => {
+                const key = e.key;
+                if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) return;
+
+                e.preventDefault(); // Prevent default scrolling
+
+                const current = document.activeElement;
+                if (!current || !getFocusables().includes(current)) {
+                    // If focus is lost, reset to first
+                    if (focusables.length > 0) focusables[0].focus();
+                    return;
+                }
+
+                const all = getFocusables();
+                const currentIndex = all.indexOf(current);
+
+                if (key === 'Enter') {
+                    current.click();
+                    return;
+                }
+
+                moveFocus(current, key);
+            });
+
+            function moveFocus(current, direction) {
+                const all = getFocusables();
+                const rect = current.getBoundingClientRect();
+                const center = {
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                };
+
+                let bestCandidate = null;
+                let minDistance = Infinity;
+
+                all.forEach(candidate => {
+                    if (candidate === current) return;
+
+                    const cRect = candidate.getBoundingClientRect();
+                    const cCenter = {
+                        x: cRect.left + cRect.width / 2,
+                        y: cRect.top + cRect.height / 2
+                    };
+
+                    // Direction filtering
+                    let isValid = false;
+                    let dist = Infinity;
+
+                    // Weights for axis alignment vs direct distance
+                    // We penalize misalignment on the non-primary axis to prefer "straight" moves
+                    const dx = cCenter.x - center.x;
+                    const dy = cCenter.y - center.y;
+
+                    switch (direction) {
+                        case 'ArrowRight':
+                            if (dx > 0) isValid = true;
+                            break;
+                        case 'ArrowLeft':
+                            if (dx < 0) isValid = true;
+                            break;
+                        case 'ArrowDown':
+                            if (dy > 0) isValid = true;
+                            break;
+                        case 'ArrowUp':
+                            if (dy < 0) isValid = true;
+                            break;
+                    }
+
+                    if (isValid) {
+                        dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            bestCandidate = candidate;
+                        }
+                    }
+                });
+
+                if (bestCandidate) {
+                    bestCandidate.focus();
+                    // Optional: scroll into view if needed (though we have overflow hidden on body, the list might need scrolling)
+                    bestCandidate.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+                    // Toggle classes for styling if needed (though :focus is best)
+                    // We can remove 'focused' class from all and add to new
+                    all.forEach(el => el.classList.remove('focused'));
+                    bestCandidate.classList.add('focused');
+                }
+            }
+
+            // Add mouseover support to update focus state (hybrid usage)
+            getFocusables().forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    el.focus();
+                    getFocusables().forEach(e => e.classList.remove('focused'));
+                    el.classList.add('focused');
+                });
+            });
+        });
+    </script>
+
+
+</body>
+
+</html>
